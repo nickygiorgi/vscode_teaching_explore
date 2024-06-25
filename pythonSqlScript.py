@@ -16,40 +16,39 @@ def execute_scripts_from_file(filepath):
 
     return sql_commands
 
-# Define the path to your Access database
-database_path = 'C:/Users/nicol/Downloads/TestDatabase.accdb'
+class AccessInterface:
+    def __init__(self, database_path):
+        # Create a connection string
+        self.connection_string = (
+            r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
+            r'DBQ=' + database_path + ';'
+        )
 
-# Create a connection string
-conn_str = (
-    r'DRIVER={Microsoft Access Driver (*.mdb, *.accdb)};'
-    r'DBQ=' + database_path + ';'
-)
+    def execute_sql_script(self, sql_script_path):
+        # Connect to the Access database
+        connection = pyodbc.connect(self.connection_string)
 
-# Connect to the Access database
-conn = pyodbc.connect(conn_str)
+        # Create a cursor from the connection
+        cursor = connection.cursor()
 
-# Create a cursor from the connection
-cursor = conn.cursor()
+        # Read and execute SQL code from a separate script
+        sql_commands = execute_scripts_from_file(sql_script_path)
+        for command in sql_commands:
+            cursor.execute(command)
+            # If the command is not a query, commit it
+            if command.find("SELECT") == -1:
+                cursor.commit()
+            # Else, fetch and print the query's results
+            else:
+                rows = cursor.fetchall()
+                for row in rows:
+                    print(row)
 
-# Example query
-#query = 'SELECT * FROM TestTable WHERE BooleanField = True'
-# Execute the query
-#cursor.execute(query)
+        # Close the cursor and DB connection
+        cursor.close()
+        connection.close()
 
-# Read and execute SQL code from a separate script
-sql_script_path = 'C:/Users/nicol/Downloads/script.sql'
-sql_commands = execute_scripts_from_file(sql_script_path)
-for command in sql_commands:
-    cursor.execute(command)
-    # If the command is not a query, commit it
-    if command.find("SELECT") == -1:
-        cursor.commit()
-    # Else, fetch and print the query's results
-    else:
-        rows = cursor.fetchall()
-        for row in rows:
-            print(row)
 
-# Close the cursor and DB connection
-cursor.close()
-conn.close()
+# Create an AccessInterface object and use it to execute SQL on an MS Access database
+access_interface = AccessInterface('C:/Users/nicol/Downloads/TestDatabase.accdb')
+access_interface.execute_sql_script('C:/Users/nicol/Downloads/script.sql')
